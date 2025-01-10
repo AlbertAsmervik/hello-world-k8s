@@ -1,13 +1,15 @@
 name: K8s Test
-
 on: [push]
-
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       
+      - name: Build Docker image
+        run: |
+          docker build -t hello-k8s .
+          
       - name: Install MicroK8s
         run: |
           sudo snap install microk8s --classic
@@ -16,7 +18,7 @@ jobs:
           
       - name: Deploy application
         run: |
-          sudo microk8s kubectl create deployment hello-world --image=nginx
+          sudo microk8s kubectl create deployment hello-world --image=hello-k8s
           sudo microk8s kubectl expose deployment hello-world --port=80 --type=ClusterIP
           
       - name: Test deployment
@@ -29,4 +31,4 @@ jobs:
           sleep 5
           
           # Test the endpoint
-          curl -s http://localhost:8080 | grep "Welcome to nginx"
+          curl -s http://localhost:8080 | grep "Hello World from Kubernetes!"
