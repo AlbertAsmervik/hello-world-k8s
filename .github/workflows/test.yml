@@ -1,0 +1,32 @@
+name: K8s Test
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install MicroK8s
+        run: |
+          sudo snap install microk8s --classic
+          sudo microk8s status --wait-ready
+          sudo microk8s enable dns
+          
+      - name: Deploy application
+        run: |
+          sudo microk8s kubectl create deployment hello-world --image=nginx
+          sudo microk8s kubectl expose deployment hello-world --port=80 --type=ClusterIP
+          
+      - name: Test deployment
+        run: |
+          # Wait for pod to be ready
+          sudo microk8s kubectl wait --for=condition=ready pod -l app=hello-world --timeout=60s
+          
+          # Port forward in background
+          sudo microk8s kubectl port-forward service/hello-world 8080:80 &
+          sleep 5
+          
+          # Test the endpoint
+          curl -s http://localhost:8080 | grep "Welcome to nginx"
